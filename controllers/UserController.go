@@ -76,6 +76,7 @@ func Login(c *gin.Context) {
 	// Set cookies for username and token
 	c.SetCookie("username", user.Username, int(time.Hour*24/time.Second), "/", "", false, true)
 	c.SetCookie("token", token, int(time.Hour*24/time.Second), "/", "", false, true)
+	c.SetCookie("isAdmin", "false", int(time.Hour*24/time.Second), "/", "", false, true)
 
 	// Respond with the generated token
 	c.JSON(http.StatusOK, gin.H{

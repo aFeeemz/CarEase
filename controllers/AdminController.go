@@ -6,6 +6,9 @@ import (
 	"FinalProject/utils"
 	"fmt"
 	"net/http"
+	"time"
+
+	// "time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -48,6 +51,7 @@ func RegisterAdmin(c *gin.Context) {
 
 // Login handles user login
 func LoginAdmin(c *gin.Context) {
+	fmt.Println("MASUK LOGIN ADMIN")
 	// Bind JSON input to the model
 	var loginInfo models.LoginInfo
 	if err := c.ShouldBindJSON(&loginInfo); err != nil {
@@ -69,25 +73,22 @@ func LoginAdmin(c *gin.Context) {
 		return
 	}
 
-	admincheck := initializers.DB.First(&user, user.ID)
-	if admincheck.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user details"})
-		return
-	}
-
-	// Check if the user is an admin
-	if user.IsAdmin == true {
-		c.JSON(http.StatusOK, gin.H{"message": "User is an admin"})
-	} else {
-		c.JSON(http.StatusForbidden, gin.H{"error": "User is not an admin"})
-		return
-	}
-
 	// Generate JWT token for the user
 	token, err := utils.GenerateJWT(user.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
-		return
+
+	}
+
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("username", user.Username, int(time.Hour*24/time.Second), "/", "", false, true)
+	c.SetCookie("token", token, int(time.Hour*24/time.Second), "/", "", false, true)
+	c.SetCookie("isAdmin", "true", int(time.Hour*24/time.Second), "/", "", false, true)
+
+	if user.IsAdmin {
+		c.SetCookie("isAdmin", "true", int(time.Hour*24/time.Second), "", "", false, true)
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user should be admin"})
 	}
 
 	// Respond with the generated token
