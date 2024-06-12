@@ -6,16 +6,15 @@ import (
 	"FinalProject/utils"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // Register handles user registration
-func Register(c *gin.Context) {
+func RegisterAdmin(c *gin.Context) {
 	// Bind JSON input to the model
-	var user models.User
+	var user models.Admin
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON input"})
 		return
@@ -28,8 +27,12 @@ func Register(c *gin.Context) {
 		return
 	}
 	user.Password = string(hashedPassword)
-	// Explicitly set IsAdmin to false
-	user.IsAdmin = false
+
+	// Explicitly declare isadmin to true
+	user.IsAdmin = true
+
+	// Explicitly declare wallet to zero
+	user.DepositAmount = 0
 
 	// Make the user to the database
 	if err := initializers.DB.Create(&user).Error; err != nil {
@@ -44,7 +47,7 @@ func Register(c *gin.Context) {
 }
 
 // Login handles user login
-func Login(c *gin.Context) {
+func LoginAdmin(c *gin.Context) {
 	// Bind JSON input to the model
 	var loginInfo models.LoginInfo
 	if err := c.ShouldBindJSON(&loginInfo); err != nil {
@@ -66,16 +69,26 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	admincheck := initializers.DB.First(&user, user.ID)
+	if admincheck.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user details"})
+		return
+	}
+
+	// Check if the user is an admin
+	if user.IsAdmin == true {
+		c.JSON(http.StatusOK, gin.H{"message": "User is an admin"})
+	} else {
+		c.JSON(http.StatusForbidden, gin.H{"error": "User is not an admin"})
+		return
+	}
+
 	// Generate JWT token for the user
 	token, err := utils.GenerateJWT(user.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
-
-	// Set cookies for username and token
-	c.SetCookie("username", user.Username, int(time.Hour*24/time.Second), "/", "", false, true)
-	c.SetCookie("token", token, int(time.Hour*24/time.Second), "/", "", false, true)
 
 	// Respond with the generated token
 	c.JSON(http.StatusOK, gin.H{
