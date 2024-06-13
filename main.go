@@ -34,7 +34,7 @@ func main() {
 		admin.POST("/addcar", middleware.AuthMiddleware, controllers.AddCars)
 		admin.POST("/addcategory", middleware.AuthMiddleware, controllers.AddCategory)
 	}
-
+	//
 	r.Run()
 
 }

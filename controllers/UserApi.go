@@ -20,3 +20,5 @@ func GetAllAvailableCars(c *gin.Context) {
 	// Return JSON response
 	c.JSON(http.StatusOK, gin.H{"cars": cars})
 }
+
+//

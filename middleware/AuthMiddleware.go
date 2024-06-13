@@ -124,3 +124,5 @@ func AuthMiddlewareCustomer(c *gin.Context) {
 		return
 	}
 }
+
+//

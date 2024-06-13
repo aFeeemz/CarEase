@@ -69,3 +69,5 @@ func AddCategory(c *gin.Context) {
 	// Respond with success message
 	c.JSON(http.StatusOK, gin.H{"success": "Category has been successfully added"})
 }
+
+//

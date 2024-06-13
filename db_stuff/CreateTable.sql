@@ -99,3 +99,4 @@ CREATE TABLE Payment (
     FOREIGN KEY (rental_history_id) REFERENCES RentalHistory(id)
 );
 
+-- 
