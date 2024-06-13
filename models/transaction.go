@@ -7,3 +7,5 @@ type Transaction struct {
 	Password      string  `gorm:"not null"`
 	DepositAmount float64 `gorm:"default:0" json:"deposit_amount"`
 }
+
+//
