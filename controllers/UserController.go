@@ -4,6 +4,7 @@ import (
 	"FinalProject/initializers"
 	"FinalProject/models"
 	"os"
+	"strconv"
 
 	// "FinalProject/utils"
 	"fmt"
@@ -69,30 +70,31 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	// Determine isAdmin status (assuming IsAdmin is a boolean field in your User model)
+	isAdmin := user.IsAdmin
+
 	// Generate JWT token for the user
 	var jwtKey = []byte(os.Getenv("SECRET_CUSTOMER"))
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": user.ID,
-		"exp": time.Now().Add(time.Hour * 24).Unix(), //TOKEN ONLY WORKS FOR 5 MINUTES
+		"sub":     user.ID,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(),
+		"isAdmin": isAdmin,
 	})
 
 	// Sign and get the complete encoded token as a string using the secret
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Failed to Create Token",
-		})
-
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to Create Token"})
+		return
 	}
 
 	// Set cookies for username and token
+	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie("username", user.Username, int(time.Hour*24/time.Second), "/", "", false, true)
 	c.SetCookie("token", tokenString, int(time.Hour*24/time.Second), "/", "", false, true)
-	c.SetCookie("isAdmin", "false", int(time.Hour*24/time.Second), "/", "", false, true)
+	c.SetCookie("isAdmin", strconv.FormatBool(isAdmin), int(time.Hour*24/time.Second), "/", "", false, true)
 
 	// Respond with the generated token
-	c.JSON(http.StatusOK, gin.H{
-		"token": token,
-	})
+	c.JSON(http.StatusOK, gin.H{"token": tokenString})
 }
