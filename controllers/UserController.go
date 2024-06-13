@@ -3,12 +3,15 @@ package controllers
 import (
 	"FinalProject/initializers"
 	"FinalProject/models"
-	"FinalProject/utils"
+	"os"
+
+	// "FinalProject/utils"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -67,15 +70,25 @@ func Login(c *gin.Context) {
 	}
 
 	// Generate JWT token for the user
-	token, err := utils.GenerateJWT(user.ID)
+	var jwtKey = []byte(os.Getenv("SECRET_CUSTOMER"))
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": user.ID,
+		"exp": time.Now().Add(time.Hour * 24).Unix(), //TOKEN ONLY WORKS FOR 5 MINUTES
+	})
+
+	// Sign and get the complete encoded token as a string using the secret
+	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
-		return
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to Create Token",
+		})
+
 	}
 
 	// Set cookies for username and token
 	c.SetCookie("username", user.Username, int(time.Hour*24/time.Second), "/", "", false, true)
-	c.SetCookie("token", token, int(time.Hour*24/time.Second), "/", "", false, true)
+	c.SetCookie("token", tokenString, int(time.Hour*24/time.Second), "/", "", false, true)
 	c.SetCookie("isAdmin", "false", int(time.Hour*24/time.Second), "/", "", false, true)
 
 	// Respond with the generated token

@@ -11,18 +11,18 @@ CREATE TABLE Users (
 -- Create the Category table
 CREATE TABLE Category (
     id SERIAL PRIMARY KEY,
-    category_name VARCHAR(255) NOT NULL
+    name VARCHAR(255) NOT NULL,
+    vehicle_brand VARCHAR(255) NOT NULL,
+    color VARCHAR(255) NOT NULL,
+    transmission VARCHAR(255) NOT NULL,
+    vin_number VARCHAR(255) NOT NULL
 );
 
 -- Create the Cars table
 CREATE TABLE Cars (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
     availability BOOLEAN NOT NULL DEFAULT TRUE,
     rental_costs DECIMAL(10, 2) NOT NULL,
-    vin_number VARCHAR(255) NOT NULL,
-    color VARCHAR(255) NOT NULL,
-    transmission VARCHAR(255) NOT NULL,
     category_id INTEGER NOT NULL,
     FOREIGN KEY (category_id) REFERENCES Category(id)
 );
@@ -38,4 +38,15 @@ CREATE TABLE RentalHistory (
     total_cost DECIMAL(10, 2) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES Users(id),
     FOREIGN KEY (car_id) REFERENCES Cars(id)
+);
+
+-- Create the Payment table
+CREATE TABLE Payment (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    rental_history_id INTEGER NOT NULL,
+    payment_method VARCHAR(255) NOT NULL,
+    status BOOLEAN NOT NULL DEFAULT FALSE,
+    FOREIGN KEY (user_id) REFERENCES Users(id),
+    FOREIGN KEY (rental_history_id) REFERENCES RentalHistory(id)
 );

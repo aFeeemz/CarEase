@@ -3,14 +3,16 @@ package controllers
 import (
 	"FinalProject/initializers"
 	"FinalProject/models"
-	"FinalProject/utils"
 	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 
 	// "time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -49,9 +51,8 @@ func RegisterAdmin(c *gin.Context) {
 	})
 }
 
-// Login handles user login
+// LoginAdmin handles admin login
 func LoginAdmin(c *gin.Context) {
-	fmt.Println("MASUK LOGIN ADMIN")
 	// Bind JSON input to the model
 	var loginInfo models.LoginInfo
 	if err := c.ShouldBindJSON(&loginInfo); err != nil {
@@ -59,7 +60,7 @@ func LoginAdmin(c *gin.Context) {
 		return
 	}
 
-	// Find the user by email
+	// Find the user by username
 	var user models.User
 	result := initializers.DB.Where("username = ?", loginInfo.Username).First(&user)
 	if result.Error != nil {
@@ -73,26 +74,32 @@ func LoginAdmin(c *gin.Context) {
 		return
 	}
 
-	// Generate JWT token for the user
-	token, err := utils.GenerateJWT(user.ID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+	// Determine isAdmin status (assuming IsAdmin is a boolean field in your User model)
+	isAdmin := user.IsAdmin
 
+	// Generate JWT token for the user
+	var jwtKey = []byte(os.Getenv("SECRET_CUSTOMER"))
+
+	fmt.Printf("INI IS ADMIN DI ADMINCONTROLLER : %v\n", isAdmin)
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub":     user.ID,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(),
+		"isAdmin": isAdmin,
+	})
+
+	// Sign and get the complete encoded token as a string using the secret
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to Create Token"})
+		return
 	}
 
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie("username", user.Username, int(time.Hour*24/time.Second), "/", "", false, true)
-	c.SetCookie("token", token, int(time.Hour*24/time.Second), "/", "", false, true)
-	c.SetCookie("isAdmin", "true", int(time.Hour*24/time.Second), "/", "", false, true)
-
-	if user.IsAdmin {
-		c.SetCookie("isAdmin", "true", int(time.Hour*24/time.Second), "", "", false, true)
-	} else {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user should be admin"})
-	}
+	c.SetCookie("token", tokenString, int(time.Hour*24/time.Second), "/", "", false, true)
+	c.SetCookie("isAdmin", strconv.FormatBool(isAdmin), int(time.Hour*24/time.Second), "/", "", false, true)
 
 	// Respond with the generated token
-	c.JSON(http.StatusOK, gin.H{
-		"token": token,
-	})
+	c.JSON(http.StatusOK, gin.H{"token": tokenString})
 }

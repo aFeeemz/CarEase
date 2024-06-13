@@ -13,3 +13,29 @@ type Admin struct {
 func (Admin) TableName() string {
 	return "users"
 }
+
+type Car struct {
+	ID           uint    `gorm:"primaryKey"`
+	Availability bool    `gorm:"not null;default:true"`
+	RentalCosts  float64 `gorm:"not null"`
+	CategoryID   uint    `gorm:"not null"`
+}
+
+// To specify table name
+func (Car) TableName() string {
+	return "cars"
+}
+
+type Category struct {
+	ID           uint   `gorm:"primaryKey"`
+	Name         string `gorm:"not null"`
+	VehicleBrand string `gorm:"not null" json:"vehicle_brand"`
+	Color        string `gorm:"not null"`
+	Transmission string `gorm:"not null"`
+	VinNumber    string `gorm:"not null" json:"vin_number"`
+}
+
+// To specify table name
+func (Category) TableName() string {
+	return "category"
+}

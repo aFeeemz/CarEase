@@ -30,7 +30,8 @@ func main() {
 	{
 		admin.POST("/register", controllers.RegisterAdmin)
 		admin.POST("/login", controllers.LoginAdmin)
-		admin.POST("/addcar", middleware.AuthMiddlewareAdmin, controllers.AddCars)
+		admin.POST("/addcar", middleware.AuthMiddleware, controllers.AddCars)
+		admin.POST("/addcategory", middleware.AuthMiddleware, controllers.AddCategory)
 	}
 
 	r.Run()
