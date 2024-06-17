@@ -84,6 +84,7 @@ func RentCar(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": rentalHistory})
 }
 
+// RentCar handles the car rental process
 func ReturnCar(c *gin.Context) {
 	var input struct {
 		RentalHistoryID  uint      `json:"rental_history_id" binding:"required"`
@@ -115,10 +116,14 @@ func ReturnCar(c *gin.Context) {
 		return
 	}
 
-	// Check if the actual return date is after the expected return date
-	if input.ActualReturnDate.After(rentalHistory.ReturnDate) {
+	// Extract the year, month, and day for both dates to compare only the date part
+	returnDate := rentalHistory.ReturnDate
+	actualReturnDate := input.ActualReturnDate
+
+	// Check if the actual return date is strictly after the expected return date
+	if actualReturnDate.After(returnDate) && !sameDay(returnDate, actualReturnDate) {
 		// Calculate late days
-		lateDays := input.ActualReturnDate.Sub(rentalHistory.ReturnDate).Hours() / 24
+		lateDays := actualReturnDate.Sub(returnDate).Hours() / 24
 		// Calculate penalty (adjust penalty calculation as per your business logic)
 		penalty := lateDays * 50 // Assuming $50 penalty per late day
 
@@ -126,10 +131,13 @@ func ReturnCar(c *gin.Context) {
 		rentalHistory.PenaltyAmount = penalty
 		// Update total cost with penalty
 		rentalHistory.TotalCost += penalty
+	} else {
+		// No penalty if returned on or before the expected return date
+		rentalHistory.PenaltyAmount = 0
 	}
 
-	// Update the actual return date and penalty amount in rental history
-	rentalHistory.ActualReturnDate = input.ActualReturnDate
+	// Update the actual return date in rental history
+	rentalHistory.ActualReturnDate = actualReturnDate
 
 	// Deduct total cost from user's deposit_amount
 	user, exists := utils.GetUserFromContext(c)
@@ -144,6 +152,7 @@ func ReturnCar(c *gin.Context) {
 	}
 
 	user.DepositAmount -= rentalHistory.TotalCost
+
 	// Begin a transaction
 	tx := db.Begin()
 	defer func() {
@@ -177,7 +186,12 @@ func ReturnCar(c *gin.Context) {
 	}
 
 	// Update user's deposit amount
-	if err := tx.Model(&user).Update("deposit_amount", user.DepositAmount).Error; err != nil {
+	queryUpdateUser := `
+		UPDATE users
+		SET deposit_amount = $1
+		WHERE id = $2
+	`
+	if err := tx.Exec(queryUpdateUser, user.DepositAmount, user.ID).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user deposit amount"})
 		return
@@ -191,4 +205,8 @@ func ReturnCar(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Car returned successfully"})
+}
+
+func sameDay(t1, t2 time.Time) bool {
+	return t1.Year() == t2.Year() && t1.Month() == t2.Month() && t1.Day() == t2.Day()
 }
