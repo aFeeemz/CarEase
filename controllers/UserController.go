@@ -47,6 +47,7 @@ func Register(c *gin.Context) {
 	})
 }
 
+// test
 // Login handles user login
 func Login(c *gin.Context) {
 	// Bind JSON input to the model
