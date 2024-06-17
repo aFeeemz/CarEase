@@ -210,3 +210,41 @@ func ReturnCar(c *gin.Context) {
 func sameDay(t1, t2 time.Time) bool {
 	return t1.Year() == t2.Year() && t1.Month() == t2.Month() && t1.Day() == t2.Day()
 }
+
+func AddFunds(c *gin.Context) {
+	var input struct {
+		Amount float64 `json:"amount" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON input"})
+		return
+	}
+
+	if input.Amount <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Amount must be greater than zero"})
+		return
+	}
+
+	db := initializers.DB
+
+	// Get the user from the context (assuming the user is authenticated)
+	user, exists := utils.GetUserFromContext(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// Update user's deposit amount using raw SQL
+	query := `
+        UPDATE users
+        SET deposit_amount = deposit_amount + ?
+        WHERE id = ?
+    `
+	if err := db.Exec(query, input.Amount, user.ID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add funds"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Funds added successfully"})
+}

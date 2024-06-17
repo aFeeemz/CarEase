@@ -27,6 +27,7 @@ func main() {
 		customer.GET("/carlist", middleware.AuthMiddlewareCustomer, controllers.GetAllAvailableCars)
 		customer.POST("/rentcar", middleware.AuthMiddlewareCustomer, controllers.RentCar)
 		customer.POST("/returncar", middleware.AuthMiddlewareCustomer, controllers.ReturnCar)
+		customer.POST("/addfunds", middleware.AuthMiddlewareCustomer, controllers.AddFunds)
 
 	}
 
