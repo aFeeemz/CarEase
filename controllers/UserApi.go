@@ -164,6 +164,18 @@ func ReturnCar(c *gin.Context) {
 		return
 	}
 
+	// Update the availability of the car to true
+	queryUpdateCar := `
+		UPDATE cars
+		SET availability = true
+		WHERE id = $1
+	`
+	if err := tx.Exec(queryUpdateCar, rentalHistory.CarID).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update car availability"})
+		return
+	}
+
 	// Update user's deposit amount
 	if err := tx.Model(&user).Update("deposit_amount", user.DepositAmount).Error; err != nil {
 		tx.Rollback()
