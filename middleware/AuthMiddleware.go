@@ -104,24 +104,23 @@ func AuthMiddlewareCustomer(c *gin.Context) {
 			return
 		}
 
-		// Find user with token
+		// Retrieve the user ID from the token claims
+		userID := uint(claims["sub"].(float64))
+
+		// Fetch the user from the database
 		var user models.User
-		initializers.DB.First(&user, claims["sub"])
-		if user.ID == 0 {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		if err := initializers.DB.First(&user, userID).Error; err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			c.Abort()
 			return
 		}
-
-		// Attach user to the context
+		// Set user ID to the context
+		c.Set("userID", claims["sub"])
+		c.Set("isAdmin", claims["isAdmin"])
 		c.Set("user", user)
-
-		// Continue to the next handler
-		c.Next()
 	} else {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		c.Abort()
-		return
 	}
 }
 

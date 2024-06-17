@@ -25,6 +25,9 @@ func main() {
 		customer.POST("/register", controllers.Register)
 		customer.POST("/login", controllers.Login)
 		customer.GET("/carlist", middleware.AuthMiddlewareCustomer, controllers.GetAllAvailableCars)
+		customer.POST("/rentcar", middleware.AuthMiddlewareCustomer, controllers.RentCar)
+		customer.POST("/returncar", middleware.AuthMiddlewareCustomer, controllers.ReturnCar)
+
 	}
 
 	admin := r.Group("/admin")
